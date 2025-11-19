@@ -1,0 +1,52 @@
+name: Deploy portfolio to gh-pages
+
+on:
+  push:
+    branches:
+      - thamadi-patch
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Prepare publish directory
+        run: |
+          set -e
+          mkdir -p public
+          if [ -f "portfolio-3d.html" ]; then
+            cp "portfolio-3d.html" public/index.html
+            echo "Copied portfolio-3d.html -> public/index.html"
+          elif [ -f "index.html" ]; then
+            cp "index.html" public/index.html
+            echo "Copied existing index.html -> public/index.html"
+          else
+            echo "ERROR: No entry HTML file found (portfolio-3d.html or index.html)" >&2
+            ls -la
+            exit 1
+          fi
+          # copy common asset folders if present
+          if [ -d "assets" ]; then
+            cp -r assets public/
+          fi
+          if [ -d "images" ]; then
+            cp -r images public/
+          fi
+          echo "Public dir contents:"
+          ls -la public
+
+      - name: Deploy to gh-pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./public
+          publish_branch: gh-pages
